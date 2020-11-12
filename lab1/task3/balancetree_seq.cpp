@@ -2,8 +2,10 @@
 #include <iostream>
 #include <cstdlib>
 
+#define NUM_THREADS 8
+
 struct bstnode {
-	 bstnode(int key) : key(key) { left = right = nullptr; }
+	bstnode(int key) : key(key) { left = right = nullptr; }
 	~bstnode() { delete left; delete right; }
 	int key;
 	bstnode *left, *right;
@@ -20,6 +22,10 @@ int height(bstnode* root) {
 	return max(lefth,righth)+1;
 }
 
+int height_parallel(bstnode* root){
+
+}
+
 //returns true if the tree is height-balanced; false otherwise
 bool isbalanced(bstnode* root) {
 	if(!root) return true;
@@ -27,6 +33,29 @@ bool isbalanced(bstnode* root) {
 	lefth = height(root->left);
 	righth = height(root->right);
 	return abs(lefth-righth)<2 && isbalanced(root->left) && isbalanced(root->right);
+}
+
+bool is_balanced_parallel(bstnode* root){
+	if(!root) return true;
+	int left_height, right_height;
+	bool is_balanced_left, is_balanced_right, is_balanced_this;
+
+	#pragma omp task shared(root)
+	left_height=height_parallel(root->left);
+
+	#pragma omp task shared(root)
+	right_height=height_parallel(root->right);
+
+	#pragma omp task shared(root)
+	is_balanced_left = is_balanced_parallel(root->left);
+	
+	#pragma omp task shared(root)
+	is_balanced_right = is_balanced_parallel(root->right);
+
+	#pragma omp task 
+	is_balanced_this = abs(left_height-right_height)<2
+
+	return is_balanced_this && is_balanced_right && is_balanced_left;
 }
 
 //return a pointer to a balanced BST of which keys are in [lower,upper]
@@ -39,12 +68,17 @@ bstnode* buildbalanced(int lower, int upper) {
   return root;
 }
 
+
+
 #define power_of_two(exp) (1<<(exp))
 
 int main()
 {
 	bstnode *root = buildbalanced(1, power_of_two(14)-1);
+	#pragma  omp  parallel num_threads(NUM_THREADS)
+	#pragma  omp  single
 	std::cout<<"isbalanced(root) = "<<(isbalanced(root)?'Y':'N')<<"\n";
+
 	delete root;
 	return 0;
 }
