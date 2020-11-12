@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
+#include <omp.h>
 
 #define NUM_THREADS 8
 
@@ -23,7 +24,19 @@ int height(bstnode* root) {
 }
 
 int height_parallel(bstnode* root){
+	if(!root) return 0;
 
+	int left_height, right_height;
+
+	#pragma omp task
+	left_height = height_parallel(root->left);
+
+	#pragma omp task 
+	right_height = height_parallel(root->right);
+
+	#pragma omp taskwait
+	std::cout<<"left height: "<<left_height<<" right height: "<<right_height<<"\n";
+	return max(left_height,right_height)+1;
 }
 
 //returns true if the tree is height-balanced; false otherwise
@@ -37,25 +50,27 @@ bool isbalanced(bstnode* root) {
 
 bool is_balanced_parallel(bstnode* root){
 	if(!root) return true;
-	int left_height, right_height;
-	bool is_balanced_left, is_balanced_right, is_balanced_this;
-
-	#pragma omp task shared(root)
-	left_height=height_parallel(root->left);
-
-	#pragma omp task shared(root)
-	right_height=height_parallel(root->right);
-
-	#pragma omp task shared(root)
-	is_balanced_left = is_balanced_parallel(root->left);
 	
-	#pragma omp task shared(root)
-	is_balanced_right = is_balanced_parallel(root->right);
+	int left_height, right_height;
+	bool is_balanced_left, is_balanced_right;
 
 	#pragma omp task 
-	is_balanced_this = abs(left_height-right_height)<2
+	left_height=height_parallel(root->left);
 
-	return is_balanced_this && is_balanced_right && is_balanced_left;
+	#pragma omp task 
+	right_height=height_parallel(root->right);
+
+	#pragma omp task 
+	is_balanced_left = is_balanced_parallel(root->left);
+	
+	#pragma omp task 
+	is_balanced_right = is_balanced_parallel(root->right);
+
+	#pragma omp taskwait
+	std::cout<<"left height: "<<left_height<< ""
+			" right height: "<<right_height<<" is balanced left: "<<is_balanced_left<< ""
+			" is balanced right"<<is_balanced_right<<"\n\n";
+	return abs(left_height-right_height)<2 && is_balanced_right && is_balanced_left;
 }
 
 //return a pointer to a balanced BST of which keys are in [lower,upper]
@@ -75,10 +90,22 @@ bstnode* buildbalanced(int lower, int upper) {
 int main()
 {
 	bstnode *root = buildbalanced(1, power_of_two(14)-1);
+	bool response;
+	double tp = omp_get_wtime();
 	#pragma  omp  parallel num_threads(NUM_THREADS)
 	#pragma  omp  single
+	response = is_balanced_parallel(root);
+	tp=omp_get_wtime()-tp;
+	std::cout<<"is_balanced_parallel(root) = "<<(response?'Y':'N')<<"\n";
+
+	double ts = omp_get_wtime();
 	std::cout<<"isbalanced(root) = "<<(isbalanced(root)?'Y':'N')<<"\n";
+	ts = omp_get_wtime()-ts;
 
 	delete root;
+	
+	std::cout<<"Sequential Version elapsed time = "<<ts<<" seconds\n";
+	std::cout<<"Parallel Version elapsed time = "<<tp<<" seconds ("<<ts/tp<<"x speedup)\n";
+
 	return 0;
 }
