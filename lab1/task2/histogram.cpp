@@ -16,7 +16,7 @@ void seq_histogram(int* array, int n, int histogram[NBUCKETS]) {
 
 void par_histogram(int* array, int n, int histogram[NBUCKETS]) {	//not faster
 	//parallel reset of buckets
-	#pragma omp parallel for nowait
+	#pragma omp parallel for
 	for(int i=0; i < NBUCKETS; i++)
 		histogram[i] = 0;
 	//parallel population of buckets
