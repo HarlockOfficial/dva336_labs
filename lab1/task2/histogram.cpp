@@ -18,19 +18,33 @@ void seq_histogram(int* array, int n, int histogram[NBUCKETS]) {
 }
 
 void par_histogram(int* array, int n, int histogram[NBUCKETS]) {	//slower than sequential
+	int H[NCORES][NBUCKETS];
 	//parallel reset of buckets
 	#pragma omp parallel for
 	for(int i=0; i < NBUCKETS; i++)
 		histogram[i] = 0;
-	//parallel population of buckets
+	#pragma omp parallel for
+	for (int i = 0; i < NCORES*NBUCKETS; i++)
+  		*((int*)H + i) = 0;
+
+	//populate H
 	#pragma omp parallel for
 	for(int i=0; i < n; i++)
 		#pragma omp atomic
-		++histogram[array[i]];
+		++H[sched_getcpu()][array[i]];
+	
+	//sum all columns of H
+	#pragma omp parallel
+	{
+		for(int i=0;i<NBUCKETS;i++){
+			#pragma omp atomic
+			histogram[i]+=H[sched_getcpu()][i];
+		}
+	}
 }
 
 void par_histogram_aligned(int* array, int n, int histogram[NBUCKETS]) {	//slowest
-	alignas(L1_DCACHE_LINESIZE) int H[NCORES][NBUCKETS];
+	alignas(L1_DCACHE_LINESIZE) int H[NCORES][ROUNDUPDIV(NBUCKETS*sizeof(int),L1_DCACHE_LINESIZE)*L1_DCACHE_LINESIZE/sizeof(int)];
 	//reset histogram
 	#pragma omp parallel for
 	for(int i=0; i < NBUCKETS; i++){

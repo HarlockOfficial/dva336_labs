@@ -17,11 +17,11 @@ double approximate_pi_parallel(long int N,int n) {
 #pragma omp parallel num_threads(n)
     {
         double partialsum = 0; // private
-#pragma omp for nowait
+        #pragma omp for nowait
         for (int i = 0;i < N;i++) {
             partialsum += ((double)((double)sqrt(1.0 - ((((double)i) / ((double)N)) * (((double)i) / ((double)N))))) / ((double)N));
         }
-#pragma omp atomic
+        #pragma omp atomic
         sum += partialsum; // merge
     }
     return sum * 4.0;

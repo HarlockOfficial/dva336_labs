@@ -28,14 +28,14 @@ int height_parallel(bstnode* root){
 
 	int left_height, right_height;
 
-	#pragma omp task
-	left_height = height_parallel(root->left);
+	#pragma omp task shared(left_height)
+ 	left_height = height_parallel(root->left);
 
-	#pragma omp task 
+	#pragma omp task shared(right_height)
 	right_height = height_parallel(root->right);
 
 	#pragma omp taskwait
-	std::cout<<"left height: "<<left_height<<" right height: "<<right_height<<"\n";
+	//std::cout<<"left height: "<<left_height<<" right height: "<<right_height<<"\n";
 	return max(left_height,right_height)+1;
 }
 
@@ -54,22 +54,22 @@ bool is_balanced_parallel(bstnode* root){
 	int left_height, right_height;
 	bool is_balanced_left, is_balanced_right;
 
-	#pragma omp task 
+	#pragma omp task shared(left_height)
 	left_height=height_parallel(root->left);
 
-	#pragma omp task 
+	#pragma omp task shared(right_height)
 	right_height=height_parallel(root->right);
 
-	#pragma omp task 
+	#pragma omp task shared(is_balanced_left)
 	is_balanced_left = is_balanced_parallel(root->left);
 	
-	#pragma omp task 
+	#pragma omp task shared(is_balanced_right)
 	is_balanced_right = is_balanced_parallel(root->right);
 
 	#pragma omp taskwait
-	std::cout<<"left height: "<<left_height<< ""
-			" right height: "<<right_height<<" is balanced left: "<<is_balanced_left<< ""
-			" is balanced right"<<is_balanced_right<<"\n\n";
+	//std::cout<<"left height: "<<left_height<< ""
+	//		" right height: "<<right_height<<" is balanced left: "<<is_balanced_left<< ""
+	//		" is balanced right"<<is_balanced_right<<"\n\n";
 	return abs(left_height-right_height)<2 && is_balanced_right && is_balanced_left;
 }
 
