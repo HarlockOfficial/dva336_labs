@@ -16,18 +16,31 @@
 template <int N> struct streamelement_t {
 	/*
 	Implementation of a stream element of generic size. 
-	The last entry of A is used to test and set the termination guard that is propagated through the modules of the graph when the stream is ended (the initial value is zero which stands for 'not terminated'). 
+	The last entry of A is used to test and set the termination guard that is propagated through the 
+	modules of the graph when the stream is ended (the initial value is zero 
+	which stands for 'not terminated'). 
 	The functions send() and  recv() implement the communication with the process passed as parameter. 
-	The collecting process for farm  and map, however, must be able to receive from any worker in a nondeterministic way. To this end, you can use recv_any() that receives from any process and returns the rank of the sender.
+	The collecting process for farm and map, however, must be able to receive from any worker in a 
+	nondeterministic way. To this end, you can use recv_any() that receives from any process and returns 
+	the rank of the sender.
 	*/
 	streamelement_t() { A[N] = 0; }
 	bool is_terminated() const { return A[N]==1; };
 	void set_terminated() { A[N] = 1; }
-	void printme(int idx) { printf("%3d) [", idx); for(int i=0; i<N; ++i) printf(" %d", A[i]); printf(" ]\n"); }
+	void printme(int idx) { 
+		//prints values of array A
+		printf("%3d) [", idx); 
+		for(int i=0; i<N; ++i) 
+			printf(" %d", A[i]); 
+		printf(" ]\n"); 
+	}
 	int& operator [] (int i) { assert(i>=0 && i<N); return A[i]; }
 	void send(int dst) { MPI_Ssend(A, N+1, MPI_INT, dst, TAG, MPI_COMM_WORLD); }
 	void recv(int src) { MPI_Recv(A, N+1, MPI_INT, src, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE); }
-	int  recv_any() { MPI_Recv(A, N+1, MPI_INT, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &status); return status.MPI_SOURCE; }
+	int  recv_any() { 
+		MPI_Recv(A, N+1, MPI_INT, MPI_ANY_SOURCE, TAG, MPI_COMM_WORLD, &status); 
+		return status.MPI_SOURCE; 
+	}
 private:
 	int A[N+1];
 	MPI_Status status;
@@ -51,7 +64,7 @@ static void in(const int dst) {
 	streamelement x;
 	for(int i=0; i<STREAM_LENGTH; ++i) {
 		for(int j=0; j<STREAM_ELEMENT_SIZE; ++j)
-			x[j] = f0(j);
+			x[j] = f0(j);	//x[j]=j+1 4ms delay
 		x.send(dst);
 	}
 	x.set_terminated();
@@ -66,7 +79,7 @@ static void out(const int src) {
 		if(x.is_terminated())
 			return;
 		for(int j=0; j<STREAM_ELEMENT_SIZE; ++j)
-			x[j] = f2(x[j]);
+			x[j] = f2(x[j]);	//x[j]*=x[j] 1ms delay
 		x.printme(++msg_counter);
 	}
 }
