@@ -1,0 +1,1 @@
+g++ -Ofast -fwhole-program -flto -march=native  -fopt-info-vec -Wall -Wextra <filename> -o <output_filename>

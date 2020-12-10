@@ -4,7 +4,7 @@
 #include <ctime>
 #include <assert.h>
 #include <x86intrin.h>
-
+#include <iostream>
 #define alignment 16	//using _m128
 
 // start of changed section
@@ -25,8 +25,8 @@ struct circle {
 struct mesh2D {
 	mesh2D (const int n) : n(n) {
 		assert(n>0 && n%16==0);
-		data.x = (float*)aligned_alloc(alignment, n*sizeof(alignment));
-		data.y = (float*)aligned_alloc(alignment, n*sizeof(alignment));
+		data.x = (float*)aligned_alloc(alignment, n*sizeof(float));
+		data.y = (float*)aligned_alloc(alignment, n*sizeof(float));
 	}
 	~mesh2D() {
 		free(data.x);
@@ -41,34 +41,37 @@ struct mesh2D {
 	circle calc_enclosingdisc() {
 		circle enclosingdisc;
 		__m128 maxx, maxy, minx, miny;
-		maxx = minx = _mm_load_ps(data.x);
-		maxy = miny = _mm_load_ps(data.y);
-		
+		minx = _mm_load_ps(data.x);
+		maxx = _mm_load_ps(data.x);
+		miny = _mm_load_ps(data.y);
+		maxy = _mm_load_ps(data.y);
 		/*
 			using min and max on arrays and shifting second array of one position every turn
 			let me have at position 0 the smallest and biggest element of the array
 		*/
-		for(int i = 4;i<n;i+=4){
-			minx = _mm_min_ps(minx, _mm_load_ps((float *)(&minx+i)));
-			miny = _mm_min_ps(miny, _mm_load_ps((float *)(&miny+i)));
-			maxx = _mm_max_ps(maxx, _mm_load_ps((float *)(&maxx+i)));
-			maxy = _mm_max_ps(maxy, _mm_load_ps((float *)(&maxy+i)));
+		for(int i=4;i<n;i+=4){	
+			minx = _mm_min_ps(minx, _mm_load_ps(data.x+i));
+			miny = _mm_min_ps(miny, _mm_load_ps(data.y+i));
+			maxx = _mm_max_ps(maxx, _mm_load_ps(data.x+i));
+			maxy = _mm_max_ps(maxy, _mm_load_ps(data.x+i));
 		}
-
 		//calc center
-		enclosingdisc.center.x = new float[1]{(maxx[0]-minx[0])/2+minx[0]};
-		enclosingdisc.center.y = new float[1]{(maxy[0]-miny[0])/2+miny[0]};
-
+		enclosingdisc.center.x = (float*)aligned_alloc(alignment, sizeof(float));
+		enclosingdisc.center.x[0] = (maxx[0]-minx[0])/2+minx[0];
+		enclosingdisc.center.y = (float*)aligned_alloc(alignment, sizeof(float));
+		enclosingdisc.center.y[0] = (maxy[0]-miny[0])/2+miny[0];
+		
 		//calc radius
-		__m128 maxsqdst = _mm_setzero_ps();
+		float maxsqdst[n];
 		for(int i=0; i<n; ++i) {
 			maxsqdst[i] = (data.x[i]-enclosingdisc.center.x[0])*(data.x[i]-enclosingdisc.center.x[0])+
 				(data.y[i]-enclosingdisc.center.y[0])*(data.y[i]-enclosingdisc.center.y[0]);
 		}
+		__m128 min_rad = _mm_load_ps(maxsqdst);
 		for(int i = 4;i<n;i+=4){
-			maxsqdst = _mm_max_ps(maxsqdst, _mm_load_ps((float *)(&maxsqdst+i)));
+			min_rad = _mm_max_ps(min_rad, _mm_load_ps(maxsqdst+i));
 		}
-		enclosingdisc.radius = sqrtf(maxsqdst[0]);
+		enclosingdisc.radius = sqrtf(min_rad[0]);
 		//return enclosing disc
 		return enclosingdisc;
 	}
@@ -96,6 +99,6 @@ int main(int argc, char *argv[]) {
 	clock_t t = clock();
 	circle res = m.calc_enclosingdisc();
 	t = clock()-t;
-	printf("center = (%g,%g)\nradius = %.10f\nelapsed time = %.3f sec\n", res.center.x, res.center.y, res.radius, (double)t/CLOCKS_PER_SEC);	
+	printf("center = (%g,%g)\nradius = %.10f\nelapsed time = %.3f sec\n", res.center.x[0], res.center.y[0], res.radius, (double)t/CLOCKS_PER_SEC);	
 	return 0;
 }
