@@ -3,6 +3,11 @@
 #include <queue>
 #include <climits>
 #include <chrono>
+//-------------------
+//new headers required by the parallel version
+#include <omp.h>
+
+#define THREAD_COUNT 8
 
 struct Node;
 
@@ -21,16 +26,25 @@ struct Node{
 void dijkstra(std::vector<Node> &start){
     std::queue<Node> queue;
     queue.push(start[0]);  //start enters the queue
-    while(!queue.empty()){
-        Node current = queue.front();    //get first node
-        queue.pop(); //removes first node
-        for(long unsigned int i = 0;i<current.out.size();++i){    //for all neighbor of the node
-            unsigned long long int tmpDistance = current.distance+current.out[i].weight;
-            if(tmpDistance<current.out[i].n->distance){
-                current.out[i].n->distance=tmpDistance;
-                current.out[i].n->nearestPrev=&current;
-                queue.push(*current.out[i].n);
+    #pragma omp parallel num_threads(THREAD_COUNT)
+    #pragma omp single
+    {
+        while(!queue.empty()){
+            Node current = queue.front();    //get first node
+            queue.pop(); //removes first node
+            for(long unsigned int i = 0;i<current.out.size();++i){    //for all neighbor of the node
+                #pragma omp task shared(queue)
+                {
+                    unsigned long long int tmpDistance = current.distance+current.out[i].weight;
+                    if(tmpDistance<current.out[i].n->distance){
+                        current.out[i].n->distance=tmpDistance;
+                        current.out[i].n->nearestPrev=&current;
+                        queue.push(*current.out[i].n);
+                    }
+                }
             }
+            //need barrier to let all task finish before going to next node
+            #pragma omp taskwait
         }
     }
 }
@@ -100,7 +114,7 @@ int main(int argc, char* argv[]){
     dijkstra(graph);
     auto funct_end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(funct_end - funct_start);
-    std::cout<<"Time required by djikstra_seq: "<<duration.count()<<" milliseconds\n";
+    std::cout<<"Time required by djikstra_par: "<<duration.count()<<" milliseconds\n";
     for(long unsigned int i = 0 ;i<graph.size();++i){
         std::cout<<"node "<<i<<"\n"
             <<graph[i].name<<" distance:"<<graph[i].distance<<"\n"
