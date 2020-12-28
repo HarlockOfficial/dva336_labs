@@ -18,14 +18,17 @@ void My_Barrier(MPI_Comm comm){
 
    if(rank == 0){
       message = 10;
-      MPI_Send(&message, count, MPI_INT, receiver, tag, MPI_COMM_WORLD);
+      MPI_Ssend(&message, count, MPI_INT, receiver, tag, MPI_COMM_WORLD);
       //std::cout<<rank<<" sended: "<<message<<" to: "<<receiver<<"\n";
    }
    for(int i=0;i<COMMUNICATION_TURNS; i++){
       MPI_Recv(&message, count, MPI_INT, sender, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       //std::cout<<rank<<" received: "<<message<<" from: "<<sender<<"\n";
       message +=1;
-      MPI_Send(&message, count, MPI_INT, receiver, tag, MPI_COMM_WORLD);
+      if(rank == 0 && i == COMMUNICATION_TURNS-1){
+         break;
+      }
+      MPI_Ssend(&message, count, MPI_INT, receiver, tag, MPI_COMM_WORLD);
       //std::cout<<rank<<" sended: "<<message<<" to: "<<receiver<<"\n";
    }
 }
