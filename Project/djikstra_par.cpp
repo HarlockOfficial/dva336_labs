@@ -6,6 +6,7 @@
 //-------------------
 //new headers required by the parallel version
 #include <omp.h>
+#include <mpi.h>
 
 #define THREAD_COUNT 8
 
@@ -23,30 +24,29 @@ struct Node{
     Node* nearestPrev;   //default NULL
 };
 
-void dijkstra(std::vector<Node> &start){
+void dijkstra_splitter(std::vector<Node> & start){
     std::queue<Node> queue;
     queue.push(start[0]);  //start enters the queue
-    #pragma omp parallel num_threads(THREAD_COUNT)
-    #pragma omp single
-    {
-        while(!queue.empty()){
-            Node current = queue.front();    //get first node
-            queue.pop(); //removes first node
-            for(long unsigned int i = 0;i<current.out.size();++i){    //for all neighbor of the node
-                #pragma omp task shared(queue)
-                {
-                    unsigned long long int tmpDistance = current.distance+current.out[i].weight;
-                    if(tmpDistance<current.out[i].n->distance){
-                        current.out[i].n->distance=tmpDistance;
-                        current.out[i].n->nearestPrev=&current;
-                        queue.push(*current.out[i].n);
-                    }
-                }
-            }
-            //need barrier to let all task finish before going to next node
-            #pragma omp taskwait
+    while(!queue.empty()){
+        Node current = queue.front();    //get first node
+        queue.pop(); //removes first node
+        for(long unsigned int i = 0;i<current.out.size();++i){    //for all neighbor of the node
+            
         }
     }
+}
+
+void dijkstra_worker(){
+    unsigned long long int tmpDistance = current.distance+current.out[i].weight;
+    if(tmpDistance<current.out[i].n->distance){
+        current.out[i].n->distance=tmpDistance;
+        current.out[i].n->nearestPrev=&current;
+        queue.push(*current.out[i].n);
+    }
+}
+
+void dijkstra_collector(){
+
 }
 
 Node generate_node(std::string name){
