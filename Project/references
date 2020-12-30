@@ -1,0 +1,5 @@
+using boost: https://www.boost.org/
+boost installed with: sudo apt install libboost-all-dev
+command used to compile: mpicxx djikstra_par.cpp -o a.out \
+-fopenmp -L/usr/lib/x86_64-linux-gnu -lboost_mpi \
+-lboost_serialization
