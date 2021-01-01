@@ -1,5 +1,6 @@
-using boost: https://www.boost.org/
+using boost C++ library: https://www.boost.org/
+using linux mint 20 ulyana
 boost installed with: sudo apt install libboost-all-dev
-command used to compile: mpicxx djikstra_par.cpp -o a.out \
--fopenmp -L/usr/lib/x86_64-linux-gnu -lboost_mpi \
--lboost_serialization
+command used to compile: mpicxx djikstra_par.cpp -o djikstra_par.out \
+-fopenmp -lboost_serialization -lboost_mpi
+command used to run: mpirun -np 8 --hostfile ./hostfile  ./djikstra_par.out 10
