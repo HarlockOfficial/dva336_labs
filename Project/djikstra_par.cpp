@@ -309,15 +309,11 @@ void djikstra_worker(boost::mpi::communicator world){
     while(true){
         //notify that worker is free
         world.isend(SPLITTER_ID, FREE_WORKER_TAG, world.rank());
-        //std::cout<<"waiting for work rank "<<world.rank()<<"\n";
         Node n;
         n.recv(world, SPLITTER_ID, ASSIGN_WORK_TAG);
-        //std::cout<<"got work rank "<<world.rank()<<" name: "<<n.name<<"\n";
-        //might happen only in the end
         if(n.name==""){
             break;
         }
-        //use open mp to parallelize this for cicle
         bool validNodeFound = false;
         #pragma omp parallel num_threads(THREAD_COUNT/2) shared(world)
         {
@@ -333,7 +329,6 @@ void djikstra_worker(boost::mpi::communicator world){
                         strcpy(tmpOut.otherNode, n.out[i].otherNode);
                         tmpOut.weight = n.out[i].weight;
                         //non blocking call to send new node in queue
-                        //n.out[i].n->fix_before_serializing();
                         tmpOut.isend(world, SPLITTER_ID, WORKER_TO_COLLECTOR_TAG);
                         validNodeFound = true;
                     }
