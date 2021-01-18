@@ -222,7 +222,7 @@ int main(int argc, char* argv[]){
 
     if(world.rank()==SPLITTER_ID){
         auto funct_start = std::chrono::steady_clock::now();
-        //djikstra_emitter(graph, world);
+        djikstra_emitter(graph, world);
         auto funct_end = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(funct_end - funct_start);
         std::cout<<"Time required by djikstra_par: "<<duration.count()<<" milliseconds\n";
