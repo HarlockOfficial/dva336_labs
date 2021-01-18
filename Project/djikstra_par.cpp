@@ -242,7 +242,7 @@ int main(int argc, char* argv[]){
             std::cout<<"\n--------------------------------------------------\n";
         }
     }else{
-        //djikstra_worker(graph, world);
+        djikstra_worker(world);
     }
     return 0;
 }
