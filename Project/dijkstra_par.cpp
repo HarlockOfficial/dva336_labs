@@ -42,7 +42,7 @@ class Edge{
             Edge e{};
             boost::optional<boost::mpi::status> stat;
             boost::mpi::request req=world.irecv(src, tag+3, e.parentNode);
-            for(int i=0;i<100;++i){
+            for(int i=0;i<1000;++i){
                 stat = req.test();
                 if(stat){
                     world.recv(stat->source(), tag+4, e.weight);
@@ -50,7 +50,7 @@ class Edge{
                     e.edge_src = stat->source();
                     return e;
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
             char exit_empty[21] = "exit_empty";
             strncpy(e.parentNode, exit_empty, 21);
@@ -83,9 +83,6 @@ void dijkstra_emitter(std::vector<Node> &start, boost::mpi::communicator world){
         #pragma omp parallel for
         for(int i=0;i<current.out.size();++i){ // NOLINT(modernize-loop-convert)
             int free_worker_id;
-            world.recv(boost::mpi::any_source, FREE_WORKER_TAG, free_worker_id);
-            current.out[i].send(world, free_worker_id, ASSIGN_WORK_TAG);
-            world.send(free_worker_id, ASSIGN_WORK_TAG, current_distance);
             unsigned long long int destination_distance;
             for (const Node &tmp: start) {
                 if (strncmp(current.out[i].otherNode, tmp.name.c_str(), 21) == 0) {
@@ -93,7 +90,13 @@ void dijkstra_emitter(std::vector<Node> &start, boost::mpi::communicator world){
                     break;
                 }
             }
-            world.send(free_worker_id, ASSIGN_WORK_TAG + 1, destination_distance);
+            #pragma omp critical
+            {
+                world.recv(boost::mpi::any_source, FREE_WORKER_TAG, free_worker_id);
+                current.out[i].send(world, free_worker_id, ASSIGN_WORK_TAG);
+                world.send(free_worker_id, ASSIGN_WORK_TAG, current_distance);
+                world.send(free_worker_id, ASSIGN_WORK_TAG + 1, destination_distance);
+            }
         }
         if(queue.empty()){
             Edge e = Edge::irecv(world, boost::mpi::any_source, WORKER_TO_COLLECTOR_TAG);
