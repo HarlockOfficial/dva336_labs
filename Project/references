@@ -1,6 +1,6 @@
 using boost C++ library: https://www.boost.org/
 using linux mint 20 ulyana
 boost installed with: sudo apt install libboost-all-dev
-command used to compile: mpicxx djikstra_par.cpp -o djikstra_par.out \
+command used to compile: mpicxx dijkstra_par.cpp -o dijkstra_par.out \
 -fopenmp -lboost_serialization -lboost_mpi -Ofast
-command used to run: mpirun -np 4 --hostfile ./hostfile  ./djikstra_par.out 10
+command used to run: mpirun -np 4 --hostfile ./hostfile  ./dijkstra_par.out 10
