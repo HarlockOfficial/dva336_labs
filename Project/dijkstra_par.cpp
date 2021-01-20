@@ -6,7 +6,7 @@
 #include <chrono>
 #include <string>
 #include <thread>
-#include <unordered_set>
+#include <cstring>
 //new headers required by the parallel version
 #include <boost/mpi.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -71,13 +71,19 @@ class Node{
         std::vector<Edge> out = std::vector<Edge>();
         std::string name;   //unique identifier of a Node
         unsigned long long int distance{}; // from start
+        bool operator< (const Node& node2) const{
+            return this->distance>node2.distance;
+        }
+        bool operator> (const Node& node2) const{
+            return this->distance<node2.distance;
+        }
 };
 
 void dijkstra_emitter(std::vector<Node> &start, boost::mpi::communicator world){
-    std::queue<Node> queue;
+    std::priority_queue<Node, std::vector<Node>, std::less<> > queue;
     queue.push(start[0]);  //start enters the queue
     while(!queue.empty()){
-        Node current = queue.front();    //get first node
+        Node current = queue.top();    //get first node
         queue.pop(); //removes first node
         unsigned long long int current_distance = current.distance;
         #pragma omp parallel for
@@ -106,7 +112,7 @@ void dijkstra_emitter(std::vector<Node> &start, boost::mpi::communicator world){
             unsigned long long int current_destination_node_distance;
             world.recv(e.edge_src, WORKER_TO_COLLECTOR_TAG+1, current_destination_node_distance);
             for(auto & i : start){
-                if(strcmp(i.name.c_str(),e.otherNode)==0){
+                if(strcmp(i.name.c_str(), e.otherNode)==0){
                     i.distance = current_destination_node_distance;
                     queue.push(i);
                     break;
@@ -136,14 +142,15 @@ void dijkstra_worker(const std::vector<Node>& graph, boost::mpi::communicator wo
         world.recv(SPLITTER_ID, ASSIGN_WORK_TAG, node_distance);
         world.recv(SPLITTER_ID, ASSIGN_WORK_TAG+1, destination_node_distance);
         unsigned long long int tmpDistance = node_distance+e.weight;
-        if(tmpDistance<destination_node_distance){
+
+        if (tmpDistance < destination_node_distance) {
             Edge tmpOut{};
             destination_node_distance = tmpDistance;
             strcpy(tmpOut.parentNode, e.parentNode);
             strcpy(tmpOut.otherNode, e.otherNode);
             tmpOut.weight = e.weight;
             tmpOut.send(world, SPLITTER_ID, WORKER_TO_COLLECTOR_TAG);
-            world.send(SPLITTER_ID, WORKER_TO_COLLECTOR_TAG+1, destination_node_distance);
+            world.send(SPLITTER_ID, WORKER_TO_COLLECTOR_TAG + 1, destination_node_distance);
         }
     }
 }
@@ -166,7 +173,16 @@ void make_graph(std::vector<Node> &list){
             if(pos!=i){
                 strcpy(e.parentNode, list[i].name.c_str());
                 strcpy(e.otherNode, list[pos].name.c_str());
-                list[i].out.push_back(e);
+                bool seen = false;
+                for(const Edge& tmp_edge: list[i].out){
+                    if(strcmp(e.parentNode, tmp_edge.parentNode)==0 && strcmp(e.otherNode, tmp_edge.otherNode)==0){
+                        seen = true;
+                        break;
+                    }
+                }
+                if(!seen) {
+                    list[i].out.push_back(e);
+                }
             }
         }
     }
@@ -185,21 +201,17 @@ int main(int argc, char* argv[]){
     std::vector<Node> graph;
     boost::mpi::environment env; //initialize the environment
     boost::mpi::communicator world; //initialize communicator
-
-
     if(argc<=1){
         if(world.rank()==SPLITTER_ID){
             std::cout<<"Usage: "<<argv[0]<<" [number of nodes]\n";
         }
         return 0;
     }
-
     if(world.rank()==SPLITTER_ID){
         srand(123456);
         for(int i = 0;i<atoi(argv[1]);++i){
             graph.push_back(generate_node(generate_name()));
         }
-
         make_graph(graph);
         graph[0].distance = 0;
         if(graph[0].out.size()==0) {
