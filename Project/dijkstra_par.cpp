@@ -79,6 +79,19 @@ class Node{
         }
 };
 
+/**
+ * O(1+(num_edges*num_nodes)+2*recv_time+(5*send_time)+irecv_time+num_nodes)
+ * irecv_time is 1000ms in worst case scenario and 3*recv_time in other cases
+ * if we consider the communication time to be 0 (send_time=0, recv_time=0)
+ * O(1+(num_edges*num_nodes)+irecv_time+num_nodes)
+ * since we consider the worst case scenarion irecv_time = 1000
+ * O(1+(num_edges*num_nodes)+1000+num_nodes)
+ * all constants can be removed
+ * O(num_edges*num_nodes+num_edges)
+ * If we consider num_edges = n ans num_nodes = m
+ * O(n*m+n)
+ * since n*m >> n => O(n*m)
+ */
 void dijkstra_emitter(std::vector<Node> &start, boost::mpi::communicator world){
     std::priority_queue<Node, std::vector<Node>, std::less<> > queue;
     queue.push(start[0]);  //start enters the queue
@@ -128,6 +141,12 @@ void dijkstra_emitter(std::vector<Node> &start, boost::mpi::communicator world){
     }
 }
 
+/**
+ * O(1+(5*send_time)+(5*recv_time))
+ * if we consider the communication time to be 0 (send_time=0, recv_time=0)
+ * O(1)
+ * since all the function is simply composed of if statements and algebraic operations
+ */
 void dijkstra_worker(const std::vector<Node>& graph, boost::mpi::communicator world){
     while(true){
         //notify that worker is free
