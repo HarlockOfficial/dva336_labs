@@ -36,7 +36,6 @@ int main(int argc, char** argv){
         std::cout<<"Usage: "<<argv[0]<<" [number of nodes]\n";
         return -1;
     }
-    std::cout<<strtoull(argv[1], NULL, 10);
     double result;
     auto funct_start = std::chrono::steady_clock::now();
     result = approximate_pi(strtoull(argv[1], NULL, 10));
