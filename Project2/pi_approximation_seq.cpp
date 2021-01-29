@@ -2,10 +2,10 @@
 #include <chrono>
 #include <cmath>
 
-double approximate_pi(unsigned long long int N) {
-    double sum = 0;
-    for (int i = 0;i < N;i++) {
-        sum += ((double)((double)sqrt(1.0 - ((((double)i) / ((double)N)) * (((double)i) / ((double)N))))) / ((double)N));
+float approximate_pi(unsigned long long int N) {
+    float sum = 0;
+    for (long long unsigned int i = 0;i < N;i++) {
+        sum += ((float)((float)sqrt(1.0 - ((((float)i) / ((float)N)) * (((float)i) / ((float)N))))) / ((float)N));
     }
     return 4.0 * sum;
 }
@@ -15,7 +15,7 @@ int main(int argc, char** argv){
         std::cout<<"Usage: "<<argv[0]<<" [number of nodes]\n";
         return -1;
     }
-    double result;
+    float result;
     auto funct_start = std::chrono::steady_clock::now();
     result = approximate_pi(strtoull(argv[1], NULL, 10));
     auto funct_end = std::chrono::steady_clock::now();
