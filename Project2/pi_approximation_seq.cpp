@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <cmath>
+#include <limits>
 
 double approximate_pi(unsigned long long int N) {
     double sum = 0;
@@ -19,6 +20,7 @@ int main(int argc, char** argv){
     auto funct_start = std::chrono::steady_clock::now();
     result = approximate_pi(strtoull(argv[1], NULL, 10));
     auto funct_end = std::chrono::steady_clock::now();
+    std::cout.precision(std::numeric_limits<double>::max_digits10);
     std::cout<<"result: "<<result<<" in "<<std::chrono::duration_cast<std::chrono::milliseconds>(funct_end - funct_start).count()<<"\n";
     return 0;
 }

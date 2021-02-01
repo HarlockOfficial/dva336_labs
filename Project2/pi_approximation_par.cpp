@@ -1,7 +1,8 @@
 #include <iostream>
 #include <chrono>
 #include <omp.h>
-#include <xmmintrin.h>
+#include <x86intrin.h>
+#include <limits>
 
 #define ALIGNMENT 16 //using sse
 #define NUM_THREADS 4
@@ -13,11 +14,8 @@ double approximate_pi(unsigned long long int N){
 
     #pragma omp parallel for num_threads(NUM_THREADS)
     for(long long unsigned int p=0;p<N/ELEMENTS_IN_VECTOR;++p) {
-        alignas(ALIGNMENT) double x[ELEMENTS_IN_VECTOR];
-        for (long long unsigned int i = ELEMENTS_IN_VECTOR*p; i < ELEMENTS_IN_VECTOR*p+ELEMENTS_IN_VECTOR; ++i) {
-            x[i-ELEMENTS_IN_VECTOR*p] = 1 - i * dx * i * dx;
-        }
-        __m128d f_xi = _mm_sqrt_pd(_mm_load_pd(x));
+        __m128d f_xi = _mm_sqrt_pd(_mm_set_pd(1 - (ELEMENTS_IN_VECTOR * p * dx * ELEMENTS_IN_VECTOR * p * dx),
+                                              1 - (ELEMENTS_IN_VECTOR * p + 1) * dx * (ELEMENTS_IN_VECTOR * p + 1) * dx));
         __m128d tmp_results = _mm_mul_pd(_mm_set1_pd(dx), f_xi);
 
         //now do horizontal reduce to obtain the final value
@@ -38,6 +36,7 @@ int main(int argc, char** argv){
     auto funct_start = std::chrono::steady_clock::now();
     result = approximate_pi(strtoull(argv[1], NULL, 10));
     auto funct_end = std::chrono::steady_clock::now();
+    std::cout.precision(std::numeric_limits<double>::max_digits10);
     std::cout<<"result: "<<result<<" in "<<std::chrono::duration_cast<std::chrono::milliseconds>(funct_end - funct_start).count()<<"\n";
     return 0;
 }
