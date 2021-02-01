@@ -4,7 +4,7 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 
-division_factor_for_reference_values = math.pow(10, 4)/2.5
+division_factor_for_reference_values = math.pow(10, 4)/1.5
 k = 4  # thread count
 
 
@@ -16,7 +16,7 @@ def main():
     pi = list()
     for elem in x:
         x_fixed.append(elem / division_factor_for_reference_values)
-        x_div_k.append((elem / (2*k)) / division_factor_for_reference_values)
+        x_div_k.append(elem / k / division_factor_for_reference_values)
         pi.append(math.pi)
 
     # plot time
@@ -24,7 +24,7 @@ def main():
     plt.plot(x, y_seq, label="Sequential Time")
     plt.plot(x, y_par, label="Parallel Time")
     plt.plot(x, x_fixed, label="N")
-    plt.plot(x, x_div_k, label="N/2k")
+    plt.plot(x, x_div_k, label="N/k")
     plt.xlabel("Value of N")
     plt.ylabel("ms to calculate approximate value of PI")
     plt.legend()
