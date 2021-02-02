@@ -31,6 +31,8 @@ def main():
                              arr_seq[0] + "," + arr_par[0] + "\n")
 
         print(str(i))
+        if i>100000000:
+            break
         i += 32768
 
 
