@@ -17,7 +17,7 @@ double approximate_pi(unsigned long long int N){
         __m128d one = _mm_set1_pd(1.0);
         __m128d elements_in_vector = _mm_set1_pd((double)ELEMENTS_IN_VECTOR);
 
-        #pragma omp for
+        #pragma omp for nowait
         for (long long unsigned int p = 0; p < N / ELEMENTS_IN_VECTOR; ++p) {
             __m128d i = _mm_add_pd(base, _mm_mul_pd(elements_in_vector, _mm_set1_pd((double)p)));
             __m128d tmp_results = _mm_mul_pd(i, dx);
